@@ -1,6 +1,3 @@
+%rebase layout title="About"
 
 	About
-
-
-
-%rebase layout title="About"

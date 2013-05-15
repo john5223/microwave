@@ -7,14 +7,14 @@
 	<link rel="stylesheet" href="/static/css/main.css" type="text/css" />
 	<script type="text/javascript" src="/static/js/jquery.js"></script>
 	
-		<title>{{title or 'Chef Dashboard'}}</title>
+		<title>{{title or 'Microwave'}}</title>
 </head>
 <body>
 	
 	
 	<div id="header">
 		<div class="wrap">
-			<h1 id="logo"><a href="#">Chef Dashboard</a></h1>
+			<h1 id="logo"><a href="/">Microwave </a> - FOR QE</h1>
 			<p><br /></p>
 			<ul id="menu">
 				
@@ -33,7 +33,7 @@
 	
 	<div class="wrap">
 
-		<div id="main">
+		<div id="main" style="width:120%">
 			%include
 		</div>
 
