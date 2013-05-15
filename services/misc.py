@@ -1,7 +1,6 @@
 import json
 
 def get_json(data, expected_keys=[]):
-    print data
     if data is None: 
         return {'error': 'no data'}
     

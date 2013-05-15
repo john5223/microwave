@@ -4,7 +4,7 @@
 		select {height: 220px; width: 250px; margin-bottom:5px}		
 		
 		#node_info { height: 300px; width: 350px; overflow: auto; } 
-	
+		#environment_info { width: 350px; height: 120px }
 	</style>
 
 	
@@ -33,14 +33,14 @@
 
 	<div class="l">
 		<h2> Container Nodes </h2> 
-		<select id="nodes" multiple="multiple" class="node_container">	
+		<select id="node_container" multiple="multiple" class="node_container">	
 			%for node in nodes:
 				<option> {{node}} </option>
 			%end		
 		</select>	
 		
 		<h2> Other Nodes </h2> 
-		<select id="nodes" multiple="multiple" class="node_container">	
+		<select id="other_node_container" multiple="multiple" class="node_container">	
 			
 		</select>	
 		
@@ -48,9 +48,13 @@
 	</div>
 	<div class="l">
 		<h2> Info </h2> 
-	
 		
-		<h3> Attributes </h3>
+		<h3> Environment Attributes </h3>
+		<textarea id="environment_info" readonly> </textarea> 
+		
+		
+		
+		<h3> Node Attributes </h3>
 		<textarea id="node_info" readonly> </textarea> 
 		
 		
@@ -63,14 +67,74 @@
 	
 $( document ).ready(function() {
 	
-	$('.environments').change( function () {
-	
+	$('#environments').change( function () {
+		$("#environment_info").val('');
+		var selected_env = $(this).val();		
+		if (selected_env == null) return;
+		
+		console.log("the value you selected: " + selected_env);		
+		data = {"name":selected_env.join()}
+		$.ajax({
+		  url:"/environment",
+		  type:"POST",
+		  data:JSON.stringify(data),
+		  contentType:"application/json; charset=utf-8",
+		  dataType:"json",
+		  success: function(data,status){
+		    // console.log("Data: " + JSON.stringify(data) + "\nStatus: " + status);
+		    
+		    
+		    if ( data['error'] ) {
+		    	$("#environment_info").val(data['error']);
+		    } else {
+			    $("#environment_info").val( JSON.stringify(data['environments'], undefined, 2));
+			    
+			    var container_nodes = data['nodes'];
+			    console.log(container_nodes);
+			    
+			    var all_nodes = [];
+			    $("#node_container option").each(function() { all_nodes.push($(this).val()) });
+			    $("#other_node_container option").each(function() { all_nodes.push($(this).val()) });
+			    
+			    
+			    var other_nodes = new Array();
+				other_nodes = jQuery.grep(all_nodes,function (item) {
+				    return jQuery.inArray(item, container_nodes) < 0;
+				});
+
+			    console.log(other_nodes);
+			    
+			    $('#node_container').empty();
+			    $('#other_node_container').empty();
+			    
+			    $.each(container_nodes, function(key,value) {   
+				     $('#node_container')
+				         .append($("<option></option>")
+				         .attr("value",value)
+				         .text(value)); 
+				});
+				$.each(other_nodes, function(key,value) {   
+				     $('#other_node_container')
+				         .append($("<option></option>")
+				         .attr("value",value)
+				         .text(value)); 
+				});
+
+			   
+			    
+		    }
+		    
+		
+		    
+		  }
+		});
 	});
 	
-	$('.node_container').change(function() {
+	$('#node_container').change(function() {
         
-        
+        $("#node_info").val('');
         var selectedValue = $(this).val();
+		if (selectedValue == null) return;
 		console.log("the value you selected: " + selectedValue);
 		
 		data = {"name":selectedValue.join()}
@@ -80,11 +144,8 @@ $( document ).ready(function() {
 		  data:JSON.stringify(data),
 		  contentType:"application/json; charset=utf-8",
 		  dataType:"json",
-		  success: function(data,status){
-		    // console.log("Data: " + JSON.stringify(data) + "\nStatus: " + status);
-		    console.log( Object.keys(data) ) ;
-		    $("#node_info").val('');
-		    
+		  success: function(data,status){		    
+			console.log( Object.keys(data) ) ;		    
 		    if ( data['error'] ) {
 		    	$("#node_info").val(data['error']);
 		    }
