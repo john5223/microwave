@@ -1,30 +1,37 @@
 %rebase layout title="Dashboard"	
 
 	<style>
-		select {height: 220px; width: 250px; margin-bottom:5px}		
+		.container {height: 220px; width: 250px; margin-bottom:5px}		
 		
 		#node_info { height: 300px; width: 350px; overflow: auto; } 
 		#environment_info { width: 350px; height: 120px }
+		#cookbook_info { max-width: 300px; width:250px; height: 200px } 
 	</style>
 
 	
 	<div class="l">
 		<h2> Environments </h2> 
-		<select id="environments" multiple="multiple">	
+		<select id="environments" multiple="multiple" class="container">	
 			<option selected=true> ALL </option> 
 			%for env in environments:
 				<option> {{env}} </option>
 			%end		
 		</select>	
 		
+		<br /><br />
 		
 		<h2> Cookbooks </h2> 
-		<select id="cookbooks" multiple="multiple">	 
+		<select id="cookbooks">	 
+			<option> -- </option>
 			%for cookbook in cookbooks:
 				<option> {{cookbook}} </option>
 			%end		
 		</select>	
+		<select id="cookbook_versions" style="display:none">
+		</select>
+		<br /><br />
 		
+		<textarea id="cookbook_info" readonly></textarea>
 		
 		
 		
@@ -33,18 +40,19 @@
 
 	<div class="l">
 		<h2> Container Nodes </h2> 
-		<select id="node_container" multiple="multiple" class="node_container">	
+		<select id="node_container" multiple="multiple" class="container">	
 			%for node in nodes:
 				<option> {{node}} </option>
 			%end		
 		</select>	
 		
+		<br /><br />
+		
 		<h2> Other Nodes </h2> 
-		<select id="other_node_container" multiple="multiple" class="node_container">	
-			
-		</select>	
+		<select id="other_node_container" multiple="multiple" class="container">	
 		
-		
+		</select>
+	
 	</div>
 	<div class="l">
 		<h2> Info </h2> 
@@ -66,6 +74,68 @@
 <script>
 	
 $( document ).ready(function() {
+	
+	%import json
+	var cookbooks = {{!json.dumps(cookbooks)}};
+	
+	function fill_cookbook_info() {
+		$('#cookbook_info').val('');
+		selected_version = $('#cookbook_versions').val();
+		selected_cookbook = $('#cookbooks').val();
+		console.log(selected_version);
+		if (selected_version != null) {
+			$.ajax ({
+				url: "/cookbooks/"+selected_cookbook+"/"+selected_version,
+				success: function(data,status) {
+					$('#cookbook_info').val(JSON.stringify(data,undefined,2));
+				}
+			});
+		}
+	}
+	
+	$('#cookbook_versions').change( function () { fill_cookbook_info(); } ) ;
+	
+	$('#cookbooks').change( function () { 
+		$('#cookbook_versions').empty();
+		$('#cookbook_info').val('');
+		
+		var selected_cookbook = $(this).val();	
+		cookbook_info = cookbooks[selected_cookbook]['versions'];
+		// console.log(JSON.stringify(versions));
+	    
+	    
+	    $.ajax({
+	    	url: "/cookbooks/"+selected_cookbook,
+	    	success: function(data,status) {
+	    		var versions = [];
+	    		version_data = data[selected_cookbook]['versions'];
+	    		console.log(JSON.stringify(version_data));
+	    
+	    		 //Get all versions from cookbook json data
+			    $.each(version_data, function(key,value) { versions.push(value['version']); });
+				
+				//Add those to cookbook_version download
+				$.each(versions, function(index, val) { 
+					$('#cookbook_versions')
+						         .append($("<option></option>")
+						         .attr("value",val)
+						         .text(val)); 						         
+				});
+				
+				$('#cookbook_versions').show();
+	   
+				fill_cookbook_info();
+				
+	    	}	    	
+	    }); 
+	    
+		
+		
+	});
+	
+	
+	
+	
 	
 	$('#environments').change( function () {
 		$("#environment_info").val('');
