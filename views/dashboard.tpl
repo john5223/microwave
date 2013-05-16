@@ -94,7 +94,7 @@ $( document ).ready(function() {
 	}
 	
 	$('#cookbook_versions').change( function () { fill_cookbook_info(); } ) ;
-	
+
 	$('#cookbooks').change( function () { 
 		$('#cookbook_versions').empty();
 		$('#cookbook_info').val('');
@@ -102,7 +102,6 @@ $( document ).ready(function() {
 		var selected_cookbook = $(this).val();	
 		cookbook_info = cookbooks[selected_cookbook]['versions'];
 		// console.log(JSON.stringify(versions));
-	    
 	    
 	    $.ajax({
 	    	url: "/cookbooks/"+selected_cookbook,
@@ -130,7 +129,29 @@ $( document ).ready(function() {
 	    }); 
 	    
 		
+	    versions = [];
+	    
+	    //Get all versions from cookbook json data
+	    $.each(cookbook_info, function(key,value) { versions.push(value['version']); });
 		
+		//Add those to cookbook_version download
+		$.each(versions, function(index, val) { 
+			$('#cookbook_versions')
+				         .append($("<option></option>")
+				         .attr("value",val)
+				         .text(val)); 
+				         
+		})
+		
+		selected_version = $('#cookbook_versions').val();
+		$.ajax ({
+			url: "/cookbooks/"+selected_cookbook+"/"+selected_version,
+			success: function(data,status) {
+				$('#cookbook_info').val(JSON.stringify(data,undefined,2));
+			}
+		});
+		
+		$('#cookbook_versions').show();
 	});
 	
 	
