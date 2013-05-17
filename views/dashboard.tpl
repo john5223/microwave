@@ -1,30 +1,32 @@
-%rebase layout title="Dashboard"	
+%rebase layout title="Microwave Dashboard"	
 
 	<style>
 		.container {height: 220px; width: 250px; margin-bottom:5px}		
-		#environments { width: 250px; } 
+		#environments { width: 250px; height: 100px; } 
+		#roles { width: 250px; height: 100px; } 
 		
 		.ui-icon { display:inline-block;line-height: 28px; }
 		
 		#node_info { height: 300px; width: 350px; overflow: auto; } 
 		#environment_info { width: 350px; height: 120px }
-		#cookbook_info {width:800px; height: 300px } 
+		#cookbook_info {width:800px; height: 300px }
+		#role_info {max-width:300px; width: 250px; height: 120px } 
 	</style>
 
-	<div style="height:35px;width:35px;position:absolute; top:10px; left: 600px ">
+	<div style="height:35px;width:35px;position:absolute; top:1%; left: 65% ">
 		<img id="loader" src="/static/images/chef-loader.gif" style="display:none" />
 	</div>
 	
 	
 	<div class="l">
 		
-		<div>
-			<h2> Environments
-			<span id="delete_environment" class="ui-icon ui-icon-circle-minus" style="margin-left:80px;"></span>			
-			<span id="add_environment" class="ui-icon ui-icon-circle-plus"></span>	
-			 </h2>
-					
+		<div style="width:250px">
+			<h2 style="display:inline">Environments</h2>
+			<span id="add_environment" class="ui-icon ui-icon-circle-plus" style="float:right"></span>
+			<span id="delete_environment" class="ui-icon ui-icon-circle-minus" style="float:right"></span>			
+			
 		</div>
+		
 			 
 		<select id="environments" multiple="multiple" class="container">	
 			<option selected=true> ALL </option> 
@@ -35,12 +37,19 @@
 		
 		<br /><br />
 		
-		<h2>Roles</h2>
+		<div style="width:250px">
+			<h2 style="display:inline">Roles</h2>
+			<span id="add_role" class="ui-icon ui-icon-circle-plus" style="float:right"></span>
+			<span id="delete_role" class="ui-icon ui-icon-circle-minus" style="float:right"></span>						
+		</div>
 		<select id="roles" multiple="multiple" class="container" >
 			%for role in roles:
 				<option>{{role}}</option>
 			%end
-		</select>
+		</select> 
+		<br /><br />
+		<h3>Role Attributes</h2>
+		<textarea id="role_info" readonly></textarea>
 		
 		
 		
@@ -103,10 +112,7 @@
 	
 
 <script>
-
-$( document ).ready(function() {	
-   
-   	
+$( document ).ready(function() {	      
    $('#delete_environment').button().click( function () {
    	 	var label = $("<label>").text('Name:');
 		var input = $('<input type="text">').attr({id: 'name', name: 'name'});
@@ -123,8 +129,7 @@ $( document ).ready(function() {
    	 			},
    	 			close: function () {}
    	 	});	    	  
-   });
-   
+   });   
    $('#add_environment').button().click( function () {
    	 	var label = $("<label>").text('Name:');
 		var input = $('<input type="text">').attr({id: 'name', name: 'name'});
@@ -141,38 +146,81 @@ $( document ).ready(function() {
    	 			},
    	 			close: function () {}
    	 	});	    	  
-   });
-   
-   
-     
-   
-      
+   });   
+        
+        
+   $('#add_role').button().click( function () {
+   	 	var div = $('<div />')
+   	 	var label = $("<label>").text('Name:');
+		var input = $('<input type="text">').attr({id: 'name', name: 'name'});
+		input.appendTo(label)
+		label.appendTo(div)
+		var textarea = $('<textarea>').css({height: '140px', width: '210px',margin: '10px 0'});
+		textarea.appendTo(div);
+							
+		div.dialog({
+				modal:true,
+   	 			title:"Add Role",
+   	 			buttons: {
+   	 				"Add": function () {
+   	 					$(this).dialog("close");
+   	 					alert("Will add it later..." + input.val() );   	 					
+   	 				},
+   	 				Cancel: function () {$(this).dialog("close");},
+   	 			},
+   	 			close: function () {}
+   	 	});	    	  
+   });   
+   $('#delete_role').button().click( function () {
+   	 	var div = $('<div />')
+   	 	var label = $("<label>").text('Name:');
+		var input = $('<input type="text">').attr({id: 'name', name: 'name'});
+		input.appendTo(label)
+		label.appendTo(div)
+		div.dialog({
+				modal:true,
+   	 			title:"Delete Role",
+   	 			buttons: {
+   	 				"Delete": function () {
+   	 					$(this).dialog("close");
+   	 					alert("Will delete it later..." + input.val() );   	 					
+   	 				},
+   	 				Cancel: function () {$(this).dialog("close");},
+   	 			},
+   	 			close: function () {}
+   	 	});	    	  
+   });        
+        
+        
+        
+         
       
 }); 
-
 </script>
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	
-<script>
-	
+<script>	
 $( document ).ready(function() {
+	
+	$('#roles').change(function () {
+		$('#node_info').empty();
+		selected_roles = $(this).val();		
+		roles_request = {"name":selected_roles.join()}
+		$.ajax({ 
+		    url:"/roles",
+		    type:"POST",
+		    data:JSON.stringify(roles_request),
+		    contentType:"application/json; charset=utf-8",
+		    dataType:"json",
+		    success: function(data,status){
+		    	$('#role_info').val(JSON.stringify(data['roles'],undefined,2));
+		    }		    
+		});		
+		
+	});
+	
+	
 	
 	
 
@@ -272,12 +320,9 @@ $( document ).ready(function() {
 		    if ( data['error'] ) {
 		    	$("#environment_info").val(data['error']);
 		    } else {
-		    	
-			    $('#node_container').empty();
+		    	$('#node_container').empty();
 			    $('#other_node_container').empty();
 			    $("#environment_info").val( JSON.stringify(data['environments'], undefined, 2));
-			    
-			    
 			    
 			    var container_nodes = data['nodes'];
 			    $.each(container_nodes, function(env,nodes) {

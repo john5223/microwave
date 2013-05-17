@@ -16,7 +16,7 @@
 	
 	<div id="header">
 		<div class="wrap">
-			<h1 id="logo"><a href="/">Microwave </a> - FOR QE</h1>
+			<h1 id="logo"><a href="/">Microwave </a> - For Chef</h1>
 			<p><br /></p>
 			<ul id="menu">
 				

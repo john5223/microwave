@@ -22,6 +22,18 @@ def dashboard():
              'environments': environment_list()['list'] }
 
 
+@post('/roles')
+def roles_info():
+    json_data = misc.get_json(request.body.read(), expected_keys=['name'])    
+    if 'error' in json_data:
+        return error
+    else:
+        names = json_data['name'].split(',')
+        query = ["name:%s" % name for name in names]
+        query = " OR ".join(query)
+        roles = [role for role in Search('role').query(query)]
+        return {'roles': roles }
+
 @route('/cookbooks')
 def cookbooks_list():
     return { 'cookbooks':  chef_api.api_request('GET','/cookbooks') }
@@ -74,37 +86,21 @@ def environment():
     elif 'error' not in json_data:
         names = json_data['name'].split(",")
         if not set(names).issubset(set([n for n in Environment.list()]+["ALL"])):
-            return {'error': 'One or more invalid environments given: %s' % json_data['name']}
-        
-        #Get query to find all environments in post
-        query = ""
-        if "ALL" in names:
-            query = "name:*"
-        else:                
-            for name in names: query += "name:%s OR " % name
-            query = query[:-4]
-        
-        #Find the nodes for the environments requested
-        environments = [e for e in Search('environment').query(query)]
-        nodes = {}
-
-        for env in environments:
-            env_name = env['name']
-            if env_name not in nodes:
-                nodes[env_name] = []
-            nodes[env_name].extend([node['name'] for node in Search('node').query("chef_environment:%s" % env['name'] )])
-        
-        #Find the nodes not belonging to the one or more environments given in the request             
+            return {'error': 'One or more invalid environments given: %s' % json_data['name']}                
+        container_nodes = {}
+        for name in names: container_nodes[name] = []
         other_nodes = {}
-        query = query.replace("name:","NOT chef_environment:").replace("OR","")        
-        for node in Search('node').query(query):
-            if node['chef_environment'] not in other_nodes:
-                other_nodes[node['chef_environment']] = []
-            other_nodes[node['chef_environment']].append(node['name'])
-        
-        return {'environments': environments,
-                'nodes': nodes,
-                'other_nodes': other_nodes }
+        search_nodes = Search('node')
+        for node in search_nodes:
+            env = node['chef_environment']
+            if env in names or "ALL" in names:
+                if env not in container_nodes: container_nodes[env] = []
+                container_nodes[env].append(node['name'])
+            else:
+                if env not in other_nodes: other_nodes[env] = []
+                other_nodes[env].append(node['name'])         
+        return { 'nodes': container_nodes,
+                 'other_nodes': other_nodes }
 
 
 
