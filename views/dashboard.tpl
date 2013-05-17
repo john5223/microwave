@@ -12,7 +12,11 @@
 		#cookbook_info {width:800px; height: 300px }
 		#role_info {max-width:300px; width: 250px; height: 120px } 
 		#role_attributes { width: 280px } 
+		
+		#node_description label, 
+		#cookbook_description label,
 		#role_attributes label {display:block}
+		
 	</style>
 
 	<div style="position:absolute; top:50%; left: 50% ">
@@ -94,6 +98,7 @@
 		
 		
 		<h3> Node Attributes </h3>
+		<div id="node_description"> </div>
 		<textarea id="node_info" readonly> </textarea> 
 		
 		
@@ -111,7 +116,7 @@
 		<select id="cookbook_versions" style="display:none">
 		</select>
 		<br /><br />
-		<label id="cookbook_description"></label>
+		<div id="cookbook_description"></div>
 		
 		<textarea id="cookbook_info" readonly></textarea>
 	</div>	
@@ -264,14 +269,29 @@ $( document ).ready(function() {
 
 	function fill_cookbook_info() {
 		$('#cookbook_info').val('');
+		
 		selected_version = $('#cookbook_versions').val();
 		selected_cookbook = $('#cookbooks').val();
 		console.log(selected_version);
 		if (selected_version != null) {
 			$.ajax ({
 				url: "/cookbooks/"+selected_cookbook+"/"+selected_version,
-				success: function(data,status) {
-					$('#cookbook_info').val(JSON.stringify(data,undefined,2));
+				success: function(cookbook_info,status) {
+					$('#cookbook_info').val(JSON.stringify(cookbook_info,undefined,2));
+					$('#cookbook_description').empty();
+					$.each(cookbook_info, function (key,val) {
+						$('<label>').html('<b>Name:</b> '+key).appendTo($('#cookbook_description'));
+						$('<label>').html('<b>Description:</b> '+cookbook_info[key]['metadata']['description']).appendTo($('#cookbook_description'));
+						
+						var attributes = JSON.stringify(cookbook_info[key]['metadata']['attributes']);
+						$('<label>').html('<b>Attributes:</b> '+attributes).appendTo($('#cookbook_description'));												
+						
+						$('<label>').html('<b>Long Description:</b><br /> '+cookbook_info[key]['metadata']['long_description'].replace(/\n/g, '<br />')).appendTo($('#cookbook_description'));
+						
+					
+					});
+					
+					
 				}
 			});
 		}
@@ -283,7 +303,9 @@ $( document ).ready(function() {
 		$('#cookbook_versions').empty();
 		$('#cookbook_info').val('');		
 		var selected_cookbook = $(this).val();			
+	    
 	    $.ajax({
+	    	async: 'false',
 	    	url: "/cookbooks/"+selected_cookbook,
 	    	success: function(data,status) {
 	    		var versions = [];
@@ -291,7 +313,11 @@ $( document ).ready(function() {
 	    		console.log(JSON.stringify(version_data));
 	    
 	    		 //Get all versions from cookbook json data
-			    $.each(version_data, function(key,value) { versions.push(value['version']); });
+			    $.each(version_data, function(key,value) { 
+			    	console.log(key + " " + value); 
+			    	versions.push(value['version']); 
+			    });
+			    
 				console.log(versions);
 				//Add those to cookbook_version download
 				$.each(versions, function(index, val) { 
@@ -305,29 +331,12 @@ $( document ).ready(function() {
 	   
 				fill_cookbook_info();
 				
+				
 	    	}	    	
 	    }); 
-	    		
-	    versions = [];	    
-	    //Get all versions from cookbook json data
-	    $.each(cookbook_info, function(key,value) { versions.push(value['version']); });
+	    
+	  
 		
-		//Add those to cookbook_version download
-		$.each(versions, function(index, val) { 
-			$('#cookbook_versions')
-				         .append($("<option></option>")
-				         .attr("value",val)
-				         .text(val)); 				         
-		})
-		
-		selected_version = $('#cookbook_versions').val();
-		$.ajax ({
-			url: "/cookbooks/"+selected_cookbook+"/"+selected_version,
-			success: function(data,status) {
-				$('#cookbook_info').val(JSON.stringify(data,undefined,2));
-			}
-		});		
-		$('#cookbook_versions').show();
 	});
 	
 	
@@ -414,7 +423,9 @@ $( document ).ready(function() {
 	
 	
 	function display_node_info() { 
+		$('#loader').show();
 		$("#node_info").val('');
+		
         var selected_nodes = $('#node_container').val().concat($('#other_node_container').val());               
         selected_nodes = selected_nodes.filter(function(n){return n}); //get rid of nulls
         if (selected_nodes == null) return;
@@ -426,18 +437,34 @@ $( document ).ready(function() {
 		  data:JSON.stringify(data),
 		  contentType:"application/json; charset=utf-8",
 		  dataType:"json",
-		  success: function(data,status){		    
-			console.log( Object.keys(data) ) ;		    
+		  success: function(node_data,status){		    
+			//console.log( Object.keys(node_data) ) ;		    
+		    
 		    if ( data['error'] ) {
-		    	$("#node_info").val(data['error']);
+		    	$("#node_info").val(node_data['error']);
 		    }
 		    else {
-			    $("#node_info").val( JSON.stringify(data, undefined, 2));
-		    }
-		    
-		    
+			    $("#node_info").val( JSON.stringify(node_data, undefined, 2));
+			    $('#node_description').empty();
+			    
+			    $.each(node_data, function(key,val) {
+			    	console.log(key);
+			    	$('<label>').html("<b>Name: </b>"+key).appendTo($('#node_description'));
+			    	
+			    	var attrib_key = 'in_use';
+			    	var attrib_data = node_data[key]['attributes'][attrib_key];
+			    	console.log(attrib_data);
+			    	if(attrib_data != null || attrib_data == '0') {
+			    		$('<label>').html("<b>"+attrib_key+": </b>"+attrib_data).appendTo($('#node_description'));
+			    	}
+			    	
+			    	$('<hr />').appendTo($('#node_description'));
+			    });
+			}
+		    $('#loader').hide();		  			  
 		  }
-		});			
+		});	
+		
 	}
 	
 	$('#node_container').change( function() { display_node_info(); } );
