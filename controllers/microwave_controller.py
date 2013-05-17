@@ -16,7 +16,7 @@ def home():
 
 @route('/dashboard', template='dashboard')
 def dashboard():  
-    return { 'nodes' : node_list()['list'],
+    return { 'nodes' : get_environment_nodes(),
              'roles': Role.list(),
              'cookbooks':  chef_api.api_request('GET','/cookbooks'), #TODO: build this into pychef
              'environments': environment_list()['list'] }
@@ -29,8 +29,10 @@ def roles_info():
         return error
     else:
         names = json_data['name'].split(',')
+        print names
         query = ["name:%s" % name for name in names]
         query = " OR ".join(query)
+        print query
         roles = [role for role in Search('role').query(query)]
         return {'roles': roles }
 
@@ -72,7 +74,37 @@ def node():
         return json_data #returns the error from get_json
  
 
- 
+def get_environment_nodes(names=["ALL"]):
+        if not set(names).issubset(set([n for n in Environment.list()]+["ALL"])):
+            return {'error': 'One or more invalid environments given: %s' % names}                
+        container_nodes = {}
+        for name in names: 
+            if name != "ALL": container_nodes[name] = []
+        other_nodes = {}
+        
+        search_nodes = Search('node')
+        for node in search_nodes:
+            env = node['chef_environment']
+            if env in names or "ALL" in names:
+                if env not in container_nodes: container_nodes[env] = []
+                container_nodes[env].append(node['name'])
+            else:
+                if env not in other_nodes: other_nodes[env] = []
+                other_nodes[env].append(node['name'])     
+        
+        if "ALL" in names:
+            environments = {}
+        else:
+            query = ""
+            for name in names: query += "name:%s OR " % name
+            query = query[:-4]
+            environments = [e for e in Search('environment').query(query)]
+            
+        return { 'environments': environments, 
+                 'nodes': container_nodes,
+                 'other_nodes': other_nodes } 
+        
+        
 
 @route('/environment/list')
 def environment_list():
@@ -85,22 +117,8 @@ def environment():
         return json_data #returns the error from get_json    
     elif 'error' not in json_data:
         names = json_data['name'].split(",")
-        if not set(names).issubset(set([n for n in Environment.list()]+["ALL"])):
-            return {'error': 'One or more invalid environments given: %s' % json_data['name']}                
-        container_nodes = {}
-        for name in names: container_nodes[name] = []
-        other_nodes = {}
-        search_nodes = Search('node')
-        for node in search_nodes:
-            env = node['chef_environment']
-            if env in names or "ALL" in names:
-                if env not in container_nodes: container_nodes[env] = []
-                container_nodes[env].append(node['name'])
-            else:
-                if env not in other_nodes: other_nodes[env] = []
-                other_nodes[env].append(node['name'])         
-        return { 'nodes': container_nodes,
-                 'other_nodes': other_nodes }
+        return get_environment_nodes(names)
+    
 
 
 

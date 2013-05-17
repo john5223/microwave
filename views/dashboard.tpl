@@ -11,9 +11,11 @@
 		#environment_info { width: 350px; height: 120px }
 		#cookbook_info {width:800px; height: 300px }
 		#role_info {max-width:300px; width: 250px; height: 120px } 
+		#role_attributes { width: 280px } 
+		#role_attributes label {display:block}
 	</style>
 
-	<div style="height:35px;width:35px;position:absolute; top:1%; left: 65% ">
+	<div style="position:absolute; top:50%; left: 50% ">
 		<img id="loader" src="/static/images/chef-loader.gif" style="display:none" />
 	</div>
 	
@@ -49,6 +51,9 @@
 		</select> 
 		<br /><br />
 		<h3>Role Attributes</h2>
+		<div id="role_attributes"></div>
+		
+		
 		<textarea id="role_info" readonly></textarea>
 		
 		
@@ -63,8 +68,12 @@
 	<div class="l">
 		<h2> Container Nodes </h2> 
 		<select id="node_container" multiple="multiple" class="container">	
-			%for node in nodes:
-				<option> {{node}} </option>
+			%for env in nodes['nodes']:
+				<optgroup label="{{env}}">
+				%for node in nodes['nodes'][env]:
+					<option> {{node}} </option>
+				%end
+				</optgroup>
 			%end		
 		</select>	
 		
@@ -204,8 +213,11 @@ $( document ).ready(function() {
 $( document ).ready(function() {
 	
 	$('#roles').change(function () {
-		$('#node_info').empty();
-		selected_roles = $(this).val();		
+		$('#role_info').val('');
+		$('#role_attributes').empty();
+		
+		selected_roles = $(this).val();
+		if (selected_roles == null) { return; }		
 		roles_request = {"name":selected_roles.join()}
 		$.ajax({ 
 		    url:"/roles",
@@ -213,8 +225,34 @@ $( document ).ready(function() {
 		    data:JSON.stringify(roles_request),
 		    contentType:"application/json; charset=utf-8",
 		    dataType:"json",
-		    success: function(data,status){
+		    success: function(data,status){		    	
 		    	$('#role_info').val(JSON.stringify(data['roles'],undefined,2));
+		    	var roles = data['roles'];
+		    	 
+		    	$.each(roles, function(key,val) {
+		    		console.log(key);
+		    		console.log(val);
+		    		
+		    		var attrib = $('<label></label>').html("<b>Name:</b> " + roles[key]['name']);
+			    	attrib.appendTo($('#role_attributes'));
+			    	
+			    	var attrib = $('<label></label>').html("<b>Description: </b>" + roles[key]['description']);
+			    	attrib.appendTo($('#role_attributes'));
+			    	
+			    	var attrib = $('<label></label>').html("<b>Run list: </b>" + roles[key]['run_list'].join(', '));
+			    	attrib.appendTo($('#role_attributes'));
+			    	
+			    	
+			    	$("<hr />").appendTo($('#role_attributes'));
+			    		
+		    	});
+		    	
+		    	
+		    	
+		    	
+		    	
+		    	
+		    	
 		    }		    
 		});		
 		
@@ -363,7 +401,6 @@ $( document ).ready(function() {
 			    	});			    		
 			    	$('#other_node_container').append(optgroup);
 			    });
-			    
 			    
 			    $('#other_node_container').select('refresh');
 			    $("#loader").hide();			    
