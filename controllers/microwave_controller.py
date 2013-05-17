@@ -29,10 +29,8 @@ def roles_info():
         return error
     else:
         names = json_data['name'].split(',')
-        print names
         query = ["name:%s" % name for name in names]
         query = " OR ".join(query)
-        print query
         roles = [role for role in Search('role').query(query)]
         return {'roles': roles }
 

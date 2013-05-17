@@ -448,15 +448,29 @@ $( document ).ready(function() {
 			    $('#node_description').empty();
 			    
 			    $.each(node_data, function(key,val) {
-			    	console.log(key);
 			    	$('<label>').html("<b>Name: </b>"+key).appendTo($('#node_description'));
 			    	
-			    	var attrib_key = 'in_use';
-			    	var attrib_data = node_data[key]['attributes'][attrib_key];
-			    	console.log(attrib_data);
-			    	if(attrib_data != null || attrib_data == '0') {
-			    		$('<label>').html("<b>"+attrib_key+": </b>"+attrib_data).appendTo($('#node_description'));
-			    	}
+			    	
+			    	// other_attributes = ['razor_metadata']
+			    	attrib_to_look_for = ['in_use', 'roles', 'ipaddress', 'platform', 'recipes']
+			    	
+			    	$.each(attrib_to_look_for, function(index,val) {
+			    		var attrib_key = val;
+				    	var attrib_data = node_data[key]['attributes'][attrib_key];
+				    	if(attrib_data != null || attrib_data == '0') {
+				    		attrib_data = JSON.stringify(attrib_data,undefined,2).replace(/"/g,'');
+				    		$('<label>').html("<b>"+attrib_key+": </b>"+attrib_data).appendTo($('#node_description'));
+				    	}
+			    	
+			    	});
+			    	
+			    	
+			    	
+			    	
+			    	
+			    	
+			    	
+			    	
 			    	
 			    	$('<hr />').appendTo($('#node_description'));
 			    });
