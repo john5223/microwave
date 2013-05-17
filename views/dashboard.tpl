@@ -2,15 +2,30 @@
 
 	<style>
 		.container {height: 220px; width: 250px; margin-bottom:5px}		
+		#environments { width: 250px; } 
+		
+		.ui-icon { display:inline-block;line-height: 28px; }
 		
 		#node_info { height: 300px; width: 350px; overflow: auto; } 
 		#environment_info { width: 350px; height: 120px }
-		#cookbook_info { max-width: 300px; width:250px; height: 200px } 
+		#cookbook_info {width:800px; height: 300px } 
 	</style>
 
+	<div style="height:35px;width:35px;position:absolute; top:10px; left: 600px ">
+		<img id="loader" src="/static/images/chef-loader.gif" style="display:none" />
+	</div>
+	
 	
 	<div class="l">
-		<h2> Environments </h2> 
+		
+		<div>
+			<h2> Environments
+			<span id="delete_environment" class="ui-icon ui-icon-circle-minus" style="margin-left:80px;"></span>			
+			<span id="add_environment" class="ui-icon ui-icon-circle-plus"></span>	
+			 </h2>
+					
+		</div>
+			 
 		<select id="environments" multiple="multiple" class="container">	
 			<option selected=true> ALL </option> 
 			%for env in environments:
@@ -20,18 +35,16 @@
 		
 		<br /><br />
 		
-		<h2> Cookbooks </h2> 
-		<select id="cookbooks">	 
-			<option> -- </option>
-			%for cookbook in cookbooks:
-				<option> {{cookbook}} </option>
-			%end		
-		</select>	
-		<select id="cookbook_versions" style="display:none">
+		<h2>Roles</h2>
+		<select id="roles" multiple="multiple" class="container" >
+			%for role in roles:
+				<option>{{role}}</option>
+			%end
 		</select>
-		<br /><br />
 		
-		<textarea id="cookbook_info" readonly></textarea>
+		
+		
+		<br /><br />
 		
 		
 		
@@ -68,16 +81,101 @@
 		
 	</div>
 	
+	<br/><br />
+	<div style="clear:both;width:1000px">
+		<h2> (<label id="numCookbooks">{{len(cookbooks)}}</label>) Cookbooks</h2> 
+		<select id="cookbooks">	 
+			<option> -- </option>
+			%for cookbook in cookbooks:
+				<option> {{cookbook}} </option>
+			%end		
+		</select>	
+		<select id="cookbook_versions" style="display:none">
+		</select>
+		<br /><br />
+		<label id="cookbook_description"></label>
+		
+		<textarea id="cookbook_info" readonly></textarea>
+	</div>	
+		
+		
 	
 	
+
+<script>
+
+$( document ).ready(function() {	
+   
+   	
+   $('#delete_environment').button().click( function () {
+   	 	var label = $("<label>").text('Name:');
+		var input = $('<input type="text">').attr({id: 'name', name: 'name'});
+		input.appendTo(label);
+		$('<div />').html(label).dialog({
+				modal:true,
+   	 			title:"Delete Environment",
+   	 			buttons: {
+   	 				"Delete": function () {
+   	 					$(this).dialog("close");
+   	 					alert("Will delete it later..." + input.val() );   	 					
+   	 				},
+   	 				Cancel: function () {$(this).dialog("close");},
+   	 			},
+   	 			close: function () {}
+   	 	});	    	  
+   });
+   
+   $('#add_environment').button().click( function () {
+   	 	var label = $("<label>").text('Name:');
+		var input = $('<input type="text">').attr({id: 'name', name: 'name'});
+		input.appendTo(label);
+		$('<div />').html(label).dialog({
+				modal:true,
+   	 			title:"Add Environment",
+   	 			buttons: {
+   	 				"Add": function () {
+   	 					$(this).dialog("close");
+   	 					alert("Will add it later..." + input.val() );   	 					
+   	 				},
+   	 				Cancel: function () {$(this).dialog("close");},
+   	 			},
+   	 			close: function () {}
+   	 	});	    	  
+   });
+   
+   
+     
+   
+      
+      
+}); 
+
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	
 <script>
 	
 $( document ).ready(function() {
 	
-	%import json
-	var cookbooks = {{!json.dumps(cookbooks)}};
 	
+
 	function fill_cookbook_info() {
 		$('#cookbook_info').val('');
 		selected_version = $('#cookbook_versions').val();
@@ -97,12 +195,8 @@ $( document ).ready(function() {
 
 	$('#cookbooks').change( function () { 
 		$('#cookbook_versions').empty();
-		$('#cookbook_info').val('');
-		
-		var selected_cookbook = $(this).val();	
-		cookbook_info = cookbooks[selected_cookbook]['versions'];
-		// console.log(JSON.stringify(versions));
-	    
+		$('#cookbook_info').val('');		
+		var selected_cookbook = $(this).val();			
 	    $.ajax({
 	    	url: "/cookbooks/"+selected_cookbook,
 	    	success: function(data,status) {
@@ -112,7 +206,7 @@ $( document ).ready(function() {
 	    
 	    		 //Get all versions from cookbook json data
 			    $.each(version_data, function(key,value) { versions.push(value['version']); });
-				
+				console.log(versions);
 				//Add those to cookbook_version download
 				$.each(versions, function(index, val) { 
 					$('#cookbook_versions')
@@ -127,10 +221,8 @@ $( document ).ready(function() {
 				
 	    	}	    	
 	    }); 
-	    
-		
-	    versions = [];
-	    
+	    		
+	    versions = [];	    
 	    //Get all versions from cookbook json data
 	    $.each(cookbook_info, function(key,value) { versions.push(value['version']); });
 		
@@ -139,8 +231,7 @@ $( document ).ready(function() {
 			$('#cookbook_versions')
 				         .append($("<option></option>")
 				         .attr("value",val)
-				         .text(val)); 
-				         
+				         .text(val)); 				         
 		})
 		
 		selected_version = $('#cookbook_versions').val();
@@ -149,8 +240,7 @@ $( document ).ready(function() {
 			success: function(data,status) {
 				$('#cookbook_info').val(JSON.stringify(data,undefined,2));
 			}
-		});
-		
+		});		
 		$('#cookbook_versions').show();
 	});
 	
@@ -159,7 +249,13 @@ $( document ).ready(function() {
 	
 	
 	$('#environments').change( function () {
+		$("#loader").show();
+		
 		$("#environment_info").val('');
+		$('#node_container').empty();
+		$('#other_node_container').empty();
+		
+		
 		var selected_env = $(this).val();		
 		if (selected_env == null) return;
 		
@@ -172,63 +268,76 @@ $( document ).ready(function() {
 		  contentType:"application/json; charset=utf-8",
 		  dataType:"json",
 		  success: function(data,status){
-		    // console.log("Data: " + JSON.stringify(data) + "\nStatus: " + status);
-		    
-		    
+		    // console.log("Data: " + JSON.stringify(data) + "\nStatus: " + status);		    		    
 		    if ( data['error'] ) {
 		    	$("#environment_info").val(data['error']);
 		    } else {
-			    $("#environment_info").val( JSON.stringify(data['environments'], undefined, 2));
-			    
-			    var container_nodes = data['nodes'];
-			    console.log(container_nodes);
-			    
-			    var all_nodes = [];
-			    $("#node_container option").each(function() { all_nodes.push($(this).val()) });
-			    $("#other_node_container option").each(function() { all_nodes.push($(this).val()) });
-			    
-			    
-			    var other_nodes = new Array();
-				other_nodes = jQuery.grep(all_nodes,function (item) {
-				    return jQuery.inArray(item, container_nodes) < 0;
-				});
-
-			    console.log(other_nodes);
-			    
+		    	
 			    $('#node_container').empty();
 			    $('#other_node_container').empty();
+			    $("#environment_info").val( JSON.stringify(data['environments'], undefined, 2));
 			    
-			    $.each(container_nodes, function(key,value) {   
-				     $('#node_container')
-				         .append($("<option></option>")
-				         .attr("value",value)
-				         .text(value)); 
-				});
-				$.each(other_nodes, function(key,value) {   
-				     $('#other_node_container')
-				         .append($("<option></option>")
-				         .attr("value",value)
-				         .text(value)); 
-				});
-
-			   
 			    
-		    }
-		    
-		
-		    
+			    
+			    var container_nodes = data['nodes'];
+			    $.each(container_nodes, function(env,nodes) {
+			    	var optgroup = $('<optgroup>');
+			    	optgroup.attr('label', env);
+			    	$.each(nodes, function(index, node) {
+			    		var option = $("<option></option>");
+			    		option.val(node);
+			    		option.text(node);			    		
+			    		optgroup.append(option);
+			    	});			    		
+			    	$('#node_container').append(optgroup);
+			    });
+			    $('#node_container').select('refresh');
+			    
+			    
+			    var other_nodes = data['other_nodes'];
+			    if (other_nodes['_default']) { 
+			    	var optgroup = $('<optgroup>');
+			    	optgroup.attr('label', "_default");
+			    	$.each(other_nodes['_default'], function(index, node) {
+			    		var option = $("<option></option>");
+			    		option.val(node);
+			    		option.text(node);			    		
+			    		optgroup.append(option);
+			    	});			    		
+			    	$('#other_node_container').append(optgroup);
+			    	delete other_nodes['_default'];
+			    }
+			    $.each(other_nodes, function(env,nodes) {
+			    	var optgroup = $('<optgroup>');
+			    	optgroup.attr('label', env);
+			    	$.each(nodes, function(index, node) {
+			    		var option = $("<option></option>");
+			    		option.val(node);
+			    		option.text(node);			    		
+			    		optgroup.append(option);
+			    	});			    		
+			    	$('#other_node_container').append(optgroup);
+			    });
+			    
+			    
+			    $('#other_node_container').select('refresh');
+			    $("#loader").hide();			    
+		    }		       
 		  }
 		});
+		
+		
+		
 	});
 	
-	$('#node_container').change(function() {
-        
-        $("#node_info").val('');
-        var selectedValue = $(this).val();
-		if (selectedValue == null) return;
-		console.log("the value you selected: " + selectedValue);
+	
+	function display_node_info() { 
+		$("#node_info").val('');
+        var selected_nodes = $('#node_container').val().concat($('#other_node_container').val());               
+        selected_nodes = selected_nodes.filter(function(n){return n}); //get rid of nulls
+        if (selected_nodes == null) return;
 		
-		data = {"name":selectedValue.join()}
+		data = {"name":selected_nodes.join()}
 		$.ajax({
 		  url:"/node",
 		  type:"POST",
@@ -246,11 +355,10 @@ $( document ).ready(function() {
 		    
 		    
 		  }
-		});
-		
-
-    });
+		});			
+	}
 	
+	$('#node_container').change( function() { display_node_info(); } );
 	
 	
 	

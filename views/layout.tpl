@@ -6,6 +6,8 @@
 	<meta http-equiv="content-type" content="text/html;charset=utf-8" />
 	<link rel="stylesheet" href="/static/css/main.css" type="text/css" />
 	<script type="text/javascript" src="/static/js/jquery.js"></script>
+	<script type="text/javascript" src="/static/js/jquery-ui.js"></script>
+	<link rel="stylesheet" href="/static/css/jquery-ui.css" type="text/css" />
 	
 		<title>{{title or 'Microwave'}}</title>
 </head>
