@@ -96,7 +96,11 @@ def get_environment_nodes(names=["ALL"]):
             query = ""
             for name in names: query += "name:%s OR " % name
             query = query[:-4]
-            environments = [e for e in Search('environment').query(query)]
+            environments = {}
+            for env in Search('environment').query(query):
+                if env['name'] not in environments:
+                    environments[env['name']] = env
+            
             
         return { 'environments': environments, 
                  'nodes': container_nodes,

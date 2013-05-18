@@ -13,10 +13,13 @@
 		#role_info { max-width:300px; width: 280px; height: 40px } 
 		#role_attributes { max-width:300px; width: 280px; height: 180px; overflow:auto; } 
 		
+		#environment_info { width: 350px; height: 40px }
+		#environment_description { overflow:auto; height: 150px; width: 350px; }
 		
-		#environment_info { width: 350px; height: 120px }
+		
 		#cookbook_info {width:800px; height: 300px }
 		
+		#environment_description label,
 		#node_description label, 
 		#cookbook_description label,
 		#role_attributes label {display:block; }
@@ -93,8 +96,9 @@
 		<h2> Info </h2> 
 		
 		<h3> Environment Attributes </h3>
+		<h4>JSON</h4>
 		<textarea id="environment_info" readonly> </textarea> 
-		
+		<div id="environment_description"> </div>
 		
 		
 		<h3> Node Attributes </h3>
@@ -250,6 +254,9 @@ $( document ).ready(function() {
 			    	var attrib = $('<label></label>').html("<b>Run list: </b>" + roles[key]['run_list'].join(', '));
 			    	attrib.appendTo($('#role_attributes'));
 			    	
+			    	var attrib = $('<label></label>').html("<b>Default attributes: </b>" + JSON.stringify(roles[key]['default_attributes']));
+			    	attrib.appendTo($('#role_attributes'));
+			    	
 			    	
 			    	$("<hr />").appendTo($('#role_attributes'));
 			    		
@@ -350,6 +357,8 @@ $( document ).ready(function() {
 		$("#loader").show();
 		
 		$("#environment_info").val('');
+		$("#environment_description").empty();
+		
 		$('#node_container').empty();
 		$('#other_node_container').empty();
 		
@@ -372,7 +381,46 @@ $( document ).ready(function() {
 		    } else {
 		    	$('#node_container').empty();
 			    $('#other_node_container').empty();
-			    $("#environment_info").val( JSON.stringify(data['environments'], undefined, 2));
+			    
+			    
+			    //*********************
+			    // Attribute Info
+			    //*********************
+			    
+			    environment_data = data['environments']
+			    $("#environment_info").val( JSON.stringify(environment_data, undefined, 2));				
+				$.each(environment_data, function(key,val) {
+			    	$('<label>').html("<b>Name: </b>"+key).appendTo($('#environment_description'));
+			    	
+			    	
+			    	// other_attributes = ['razor_metadata']
+			    	attrib_to_look_for = ['package_component','keystone']
+			    	
+			    	$.each(attrib_to_look_for, function(index,val) {
+			    		var attrib_key = val;
+			    		if (environment_data[key]['override_attributes']) {
+			    			var attrib_data = environment_data[key]['override_attributes'][attrib_key];
+					    	if(attrib_data != null || attrib_data == '0') {
+					    		attrib_data = JSON.stringify(attrib_data,undefined,2).replace(/"/g,'');
+					    		$('<label>').css('padding-left','15px')
+					    				.html("<b>"+attrib_key+": </b>"+attrib_data)
+					    				.appendTo($('#environment_description'));
+					    	}				    	
+			    		}
+				    	
+			    	});
+			    	
+			    	
+			    	$('<hr />').appendTo($('#environment_description'));
+			    });    
+
+
+			    
+			    
+			    // ******************************
+			    //   Node containers
+			    // *********************************
+			    
 			    
 			    var container_nodes = data['nodes'];
 			    $.each(container_nodes, function(env,nodes) {
@@ -456,7 +504,8 @@ $( document ).ready(function() {
 			    	
 			    	
 			    	// other_attributes = ['razor_metadata']
-			    	attrib_to_look_for = ['in_use', 'roles', 'ipaddress', 'platform', 'recipes']
+			    	attrib_to_look_for = ['in_use', 'roles', 'ipaddress', 
+			    						'platform', 'recipes', 'razor_metadata']
 			    	
 			    	$.each(attrib_to_look_for, function(index,val) {
 			    		var attrib_key = val;
