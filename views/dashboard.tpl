@@ -7,15 +7,19 @@
 		
 		.ui-icon { display:inline-block;line-height: 28px; }
 		
-		#node_info { height: 300px; width: 350px; overflow: auto; } 
+		#node_info { height: 40px; width: 350px; overflow: auto; } 
+		#node_description { overflow:auto; height: 300px; width: 350px; }
+		
+		#role_info { max-width:300px; width: 280px; height: 40px } 
+		#role_attributes { max-width:300px; width: 280px; height: 180px; overflow:auto; } 
+		
+		
 		#environment_info { width: 350px; height: 120px }
 		#cookbook_info {width:800px; height: 300px }
-		#role_info {max-width:300px; width: 250px; height: 120px } 
-		#role_attributes { width: 280px } 
 		
 		#node_description label, 
 		#cookbook_description label,
-		#role_attributes label {display:block}
+		#role_attributes label {display:block; }
 		
 	</style>
 
@@ -48,23 +52,19 @@
 			<span id="add_role" class="ui-icon ui-icon-circle-plus" style="float:right"></span>
 			<span id="delete_role" class="ui-icon ui-icon-circle-minus" style="float:right"></span>						
 		</div>
+		
 		<select id="roles" multiple="multiple" class="container" >
 			%for role in roles:
 				<option>{{role}}</option>
 			%end
 		</select> 
 		<br /><br />
-		<h3>Role Attributes</h2>
+		<h3>Role Attributes</h3>
+		<h4>JSON</h4>
+		<textarea id="role_info" readonly></textarea>
 		<div id="role_attributes"></div>
 		
-		
-		<textarea id="role_info" readonly></textarea>
-		
-		
-		
 		<br /><br />
-		
-		
 		
 	</div>
 
@@ -98,13 +98,16 @@
 		
 		
 		<h3> Node Attributes </h3>
-		<div id="node_description"> </div>
+		<h4> JSON </h4>
 		<textarea id="node_info" readonly> </textarea> 
+		
+		<div id="node_description"> </div>
+		<br />
 		
 		
 	</div>
 	
-	<br/><br />
+	
 	<div style="clear:both;width:1000px">
 		<h2> (<label id="numCookbooks">{{len(cookbooks)}}</label>) Cookbooks</h2> 
 		<select id="cookbooks">	 
@@ -425,6 +428,7 @@ $( document ).ready(function() {
 	function display_node_info() { 
 		$('#loader').show();
 		$("#node_info").val('');
+		$('#node_description').empty();
 		
         var selected_nodes = $('#node_container').val().concat($('#other_node_container').val());               
         selected_nodes = selected_nodes.filter(function(n){return n}); //get rid of nulls
@@ -445,7 +449,7 @@ $( document ).ready(function() {
 		    }
 		    else {
 			    $("#node_info").val( JSON.stringify(node_data, undefined, 2));
-			    $('#node_description').empty();
+			    
 			    
 			    $.each(node_data, function(key,val) {
 			    	$('<label>').html("<b>Name: </b>"+key).appendTo($('#node_description'));
@@ -459,17 +463,12 @@ $( document ).ready(function() {
 				    	var attrib_data = node_data[key]['attributes'][attrib_key];
 				    	if(attrib_data != null || attrib_data == '0') {
 				    		attrib_data = JSON.stringify(attrib_data,undefined,2).replace(/"/g,'');
-				    		$('<label>').html("<b>"+attrib_key+": </b>"+attrib_data).appendTo($('#node_description'));
+				    		$('<label>').css('padding-left','15px')
+				    				.html("<b>"+attrib_key+": </b>"+attrib_data)
+				    				.appendTo($('#node_description'));
 				    	}
 			    	
 			    	});
-			    	
-			    	
-			    	
-			    	
-			    	
-			    	
-			    	
 			    	
 			    	
 			    	$('<hr />').appendTo($('#node_description'));
