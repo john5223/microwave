@@ -2,19 +2,25 @@
 
 	<style>
 		.container {height: 220px; width: 250px; margin-bottom:5px}		
+		.ui-icon { display:inline-block;line-height: 28px; }
+		
 		#environments { width: 250px; height: 100px; } 
 		#roles { width: 250px; height: 100px; } 
 		
-		.ui-icon { display:inline-block;line-height: 28px; }
-		
-		#node_info { height: 40px; width: 350px; overflow: auto; } 
+		#node_attributes * { display:inline; margin-right: 20px } 		
+		#node_json {display:none; width: 580px; height: 240px; min-width:300px; resize:none} 
 		#node_description { overflow:auto; height: 300px; width: 350px; }
+		#node_json_link { display:none }
 		
-		#role_info { max-width:300px; width: 280px; height: 40px } 
-		#role_attributes { max-width:300px; width: 280px; height: 180px; overflow:auto; } 
+		#role_attributes * { display:inline; margin-right: 20px } 
+		#role_json { display:none; width: 580px; height: 240px; min-width:300px; resize:none } 
+		#role_description { max-width:300px; width: 280px; height: 180px; overflow:auto } 
+		#role_json_link { display:none }
 		
-		#environment_info { width: 350px; height: 40px }
+		#environment_attributes * { display:inline; margin-right: 20px } 
+		#environment_json { display:none; width: 350px; height: 40px; min-width:300px; resize:none }
 		#environment_description { overflow:auto; height: 150px; width: 350px; }
+		#environment_json_link { display:none }
 		
 		
 		#cookbook_info {width:800px; height: 300px }
@@ -22,8 +28,9 @@
 		#environment_description label,
 		#node_description label, 
 		#cookbook_description label,
-		#role_attributes label {display:block; }
+		#role_description label {display:block; }	
 		
+			
 	</style>
 
 	<div style="position:absolute; top:50%; left: 50% ">
@@ -62,10 +69,14 @@
 			%end
 		</select> 
 		<br /><br />
-		<h3>Role Attributes</h3>
-		<h4>JSON</h4>
-		<textarea id="role_info" readonly></textarea>
-		<div id="role_attributes"></div>
+		
+		<div id="role_attributes">		
+			<h3>Role Attributes</h3>
+			<button id="role_json_link" class="" style="">Full response</button>			
+			<textarea id="role_json" readonly></textarea>		
+		</div>
+		<br />		
+		<div id="role_description">Click a role above to see the description.</div>
 		
 		<br /><br />
 		
@@ -95,17 +106,21 @@
 	<div class="l">
 		<h2> Info </h2> 
 		
-		<h3> Environment Attributes </h3>
-		<h4>JSON</h4>
-		<textarea id="environment_info" readonly> </textarea> 
-		<div id="environment_description"> </div>
+		<div id="environment_attributes">
+			<h3> Environment Attributes </h3>
+			<button id="environment_json_link">Full response</button>
+			<textarea id="environment_json" readonly> </textarea> 			
+		</div>
+		<div id="environment_description">Click an environment to see more information.</div>		
+		<br />
 		
 		
-		<h3> Node Attributes </h3>
-		<h4> JSON </h4>
-		<textarea id="node_info" readonly> </textarea> 
-		
-		<div id="node_description"> </div>
+		<div id="node_attributes">
+			<h3> Node Attributes </h3>
+			<button id="node_json_link">Full response</button>
+			<textarea id="node_json" readonly></textarea> 			
+		</div>		
+		<div id="node_description">Click a node to see more information.</div>
 		<br />
 		
 		
@@ -224,9 +239,25 @@ $( document ).ready(function() {
 <script>	
 $( document ).ready(function() {
 	
+	$('#role_json_link').click(function () { 
+		$('#role_json').dialog({title: "Role Attributes", width:'330', height:'350' });
+	});
+	
+	$('#node_json_link').click(function () { 
+		$('#node_json').dialog({title: "Node Attributes", width:'330', height:'350' });
+	});
+	
+	$('#environment_json_link').click(function () { 
+		$('#environment_json').dialog({title: "Environment Attributes", width: '330', height:'350' });
+	});
+	
+	
+	
+	
 	$('#roles').change(function () {
-		$('#role_info').val('');
-		$('#role_attributes').empty();
+		
+		$('#role_json').val('');
+		$('#role_description').empty();
 		
 		selected_roles = $(this).val();
 		if (selected_roles == null) { return; }		
@@ -238,27 +269,26 @@ $( document ).ready(function() {
 		    contentType:"application/json; charset=utf-8",
 		    dataType:"json",
 		    success: function(data,status){		    	
-		    	$('#role_info').val(JSON.stringify(data['roles'],undefined,2));
+		    	$('#role_json').val(JSON.stringify(data['roles'],undefined,2));
+		    	$('#role_json_link').show();
+		    	
 		    	var roles = data['roles'];
 		    	 
 		    	$.each(roles, function(key,val) {
-		    		console.log(key);
-		    		console.log(val);
-		    		
 		    		var attrib = $('<label></label>').html("<b>Name:</b> " + roles[key]['name']);
-			    	attrib.appendTo($('#role_attributes'));
+			    	attrib.appendTo($('#role_description'));
 			    	
 			    	var attrib = $('<label></label>').html("<b>Description: </b>" + roles[key]['description']);
-			    	attrib.appendTo($('#role_attributes'));
+			    	attrib.appendTo($('#role_description'));
 			    	
 			    	var attrib = $('<label></label>').html("<b>Run list: </b>" + roles[key]['run_list'].join(', '));
-			    	attrib.appendTo($('#role_attributes'));
+			    	attrib.appendTo($('#role_description'));
 			    	
 			    	var attrib = $('<label></label>').html("<b>Default attributes: </b>" + JSON.stringify(roles[key]['default_attributes']));
-			    	attrib.appendTo($('#role_attributes'));
+			    	attrib.appendTo($('#role_description'));
 			    	
 			    	
-			    	$("<hr />").appendTo($('#role_attributes'));
+			    	$("<hr />").appendTo($('#role_description'));
 			    		
 		    	});
 		    	
@@ -356,7 +386,7 @@ $( document ).ready(function() {
 	$('#environments').change( function () {
 		$("#loader").show();
 		
-		$("#environment_info").val('');
+		$("#environment_json").val('');
 		$("#environment_description").empty();
 		
 		$('#node_container').empty();
@@ -377,7 +407,7 @@ $( document ).ready(function() {
 		  success: function(data,status){
 		    // console.log("Data: " + JSON.stringify(data) + "\nStatus: " + status);		    		    
 		    if ( data['error'] ) {
-		    	$("#environment_info").val(data['error']);
+		    	$("#environment_json").val(data['error']);
 		    } else {
 		    	$('#node_container').empty();
 			    $('#other_node_container').empty();
@@ -388,13 +418,16 @@ $( document ).ready(function() {
 			    //*********************
 			    
 			    environment_data = data['environments']
-			    $("#environment_info").val( JSON.stringify(environment_data, undefined, 2));				
+			    
+			    $("#environment_json").val( JSON.stringify(environment_data, undefined, 2));				
+				$("#environment_json_link").show();
+				
 				$.each(environment_data, function(key,val) {
 			    	$('<label>').html("<b>Name: </b>"+key).appendTo($('#environment_description'));
 			    	
 			    	
 			    	// other_attributes = ['razor_metadata']
-			    	attrib_to_look_for = ['package_component','keystone']
+			    	attrib_to_look_for = ['package_component','keystone', 'vips']
 			    	
 			    	$.each(attrib_to_look_for, function(index,val) {
 			    		var attrib_key = val;
@@ -475,7 +508,7 @@ $( document ).ready(function() {
 	
 	function display_node_info() { 
 		$('#loader').show();
-		$("#node_info").val('');
+		$("#node_json").val('');
 		$('#node_description').empty();
 		
         var selected_nodes = $('#node_container').val().concat($('#other_node_container').val());               
@@ -493,19 +526,19 @@ $( document ).ready(function() {
 			//console.log( Object.keys(node_data) ) ;		    
 		    
 		    if ( data['error'] ) {
-		    	$("#node_info").val(node_data['error']);
+		    	$("#node_json").val(node_data['error']);
 		    }
 		    else {
-			    $("#node_info").val( JSON.stringify(node_data, undefined, 2));
-			    
+			    $("#node_json").val( JSON.stringify(node_data, undefined, 2));
+			    $("#node_json_link").show();
 			    
 			    $.each(node_data, function(key,val) {
 			    	$('<label>').html("<b>Name: </b>"+key).appendTo($('#node_description'));
 			    	
 			    	
 			    	// other_attributes = ['razor_metadata']
-			    	attrib_to_look_for = ['in_use', 'roles', 'ipaddress', 
-			    						'platform', 'recipes', 'razor_metadata']
+			    	attrib_to_look_for = ['in_use', 'roles', 'recipes', 'ipaddress', 
+			    						'platform',  'razor_metadata']
 			    	
 			    	$.each(attrib_to_look_for, function(index,val) {
 			    		var attrib_key = val;
