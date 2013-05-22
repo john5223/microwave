@@ -4,8 +4,8 @@
 		.container {height: 220px; width: 250px; margin-bottom:5px}		
 		.ui-icon { display:inline-block;line-height: 28px; }
 		
-		#environments { width: 250px; height: 100px; } 
-		#roles { width: 250px; height: 100px; } 
+		#environments { width: 250px; height: 200px; } 
+		#roles { width: 250px; height: 200px; } 
 		
 		#node_attributes * { display:inline; margin-right: 20px } 		
 		#node_json {display:none; width: 580px; height: 240px; min-width:300px; resize:none} 
@@ -32,12 +32,12 @@
 		
 			
 	</style>
-
+	
 	<div style="position:absolute; top:50%; left: 50% ">
 		<img id="loader" src="/static/images/chef-loader.gif" style="display:none" />
 	</div>
 	
-	
+	<button id="nuke"> NUKE ENVIRONMENT </button>
 	<div class="l">
 		
 		<div style="width:250px">
@@ -48,10 +48,10 @@
 		</div>
 		
 			 
-		<select id="environments" multiple="multiple" class="container">	
+		<select id="environments" multiple="multiple" cl``ass="container">	
 			<option selected=true> ALL </option> 
 			%for env in environments:
-				<option> {{env}} </option>
+		`		<option> {{env}} </option>
 			%end		
 		</select>	
 		
@@ -97,10 +97,17 @@
 		
 		<br /><br />
 		
-		<h2> Other Nodes </h2> 
-		<select id="other_node_container" multiple="multiple" class="container">	
 		
+		
+		<br /><br />
+		
+		<h2> Other Nodes 
+			<span id="move_node" class="ui-icon ui-icon-circle-arrow-n" style="margin-left:80px"></span> 
+		</h2> 
+		
+		<select id="other_node_container" multiple="multiple" class="container">			
 		</select>
+		
 	
 	</div>
 	<div class="l">
@@ -159,7 +166,22 @@ $( document ).ready(function() {
    	 			buttons: {
    	 				"Delete": function () {
    	 					$(this).dialog("close");
-   	 					alert("Will delete it later..." + input.val() );   	 					
+   	 					$.ajax({
+   	 						url: "/environment/delete",
+   	 						type: "POST",
+   	 						dataType: "json",
+   	 						data: JSON.stringify({'name': input.val()}),
+   	 						success: function(data,status) {
+   	 							var label=$('<label>').text(status);
+   	 							label.dialog();
+   	 						},
+   	 						error: function(data,status) {
+   	 							var label=$('<label>').text(status);
+   	 							label.dialog();
+   	 						}
+   	 						
+   	 					});
+   	 					   	 					
    	 				},
    	 				Cancel: function () {$(this).dialog("close");},
    	 			},
@@ -176,7 +198,22 @@ $( document ).ready(function() {
    	 			buttons: {
    	 				"Add": function () {
    	 					$(this).dialog("close");
-   	 					alert("Will add it later..." + input.val() );   	 					
+   	 					$.ajax({
+   	 						url: "/environment/add",
+   	 						type: "POST",
+   	 						dataType: "json",
+   	 						data: JSON.stringify({'name': input.val()}),
+   	 						success: function(data,status) {
+   	 							var label=$('<label>').text(status);
+   	 							label.dialog();
+   	 						},
+   	 						error: function(data,status) {
+   	 							var label=$('<label>').text(status);
+   	 							label.dialog();
+   	 						}
+   	 						
+   	 					});
+   	 					   	 					
    	 				},
    	 				Cancel: function () {$(this).dialog("close");},
    	 			},
@@ -238,6 +275,88 @@ $( document ).ready(function() {
 	
 <script>	
 $( document ).ready(function() {
+	$('#nuke').button().click(function () {
+		$('#loader').show();
+		$.ajax({
+			url:"/nuke_environment",
+			success: function(data,status){	
+		    	//go select env then display success
+		    	display_environment();
+		    	var div = $('<label>').html(status).appendTo($('<div>'));
+				div.dialog();
+				$('#loader').hide();		
+			},
+			error: function(data,status) {
+				var div = $('<label>').html("status:" + status).appendTo($('<div>'));
+				div.dialog();
+				$('#loader').hide();
+			}
+		});
+		
+	});
+	
+	
+	$('.move_to_environment').live("click", function () { 
+		$('.move_to').dialog('close'); 	
+		$('#loader').show();
+		
+		
+		nodes = $('#other_node_container').val();
+		env = $(this).text();		
+		move = {'nodes': nodes,
+				'environment': env }
+		$.ajax({
+			url:"/move_nodes",
+		    type:"POST",
+		    data:JSON.stringify(move),
+		    dataType:"json",
+		    success: function(data,status){	
+		    	//go select env then display success
+		    	display_environment();
+		    	var div = $('<label>').html(status).appendTo($('<div>'));
+				div.dialog();
+				$('#loader').hide();		
+			}			
+		});
+		
+		
+	});
+	
+	
+	$('#move_node').button().click(function () { 
+		other_nodes = $('#other_node_container').val();
+		selected_environments = $('#environments').val();
+		
+		env_buttons = $('<div />');
+		$.each($('#environments').val(), function(key, val) {
+			var move_nodes_button = $('<button />').attr("class","move_to_environment")
+						   .html(val + "<br />")
+						   .css({"text-align":"center"});									 
+			move_nodes_button.appendTo(env_buttons);
+		});		
+		
+		var div = $('<label>')
+				.html("<b>Move:</b> <br />" + other_nodes.join('<br />') + " <br /><br />\
+				<b>to environment:</b> <br /><br />" + env_buttons.html() + "<br /><br />")
+				.appendTo($('<div />'))
+		
+		div.attr("class","move_to");
+		div.dialog();
+		
+		
+	
+	
+	});
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	$('#role_json_link').click(function () { 
 		$('#role_json').dialog({title: "Role Attributes", width:'330', height:'350' });
@@ -380,10 +499,7 @@ $( document ).ready(function() {
 	});
 	
 	
-	
-	
-	
-	$('#environments').change( function () {
+	function display_environment() {
 		$("#loader").show();
 		
 		$("#environment_json").val('');
@@ -393,7 +509,7 @@ $( document ).ready(function() {
 		$('#other_node_container').empty();
 		
 		
-		var selected_env = $(this).val();		
+		var selected_env = $('#environments').val();		
 		if (selected_env == null) return;
 		
 		console.log("the value you selected: " + selected_env);		
@@ -502,7 +618,18 @@ $( document ).ready(function() {
 		});
 		
 		
-		
+	
+	}
+	
+	
+	$('#environments').change( function () {
+		display_environment();		
+	});
+	
+	
+	
+	$('.change_run_list').live('click',function () { 
+		alert("changing!");
 	});
 	
 	
@@ -533,7 +660,10 @@ $( document ).ready(function() {
 			    $("#node_json_link").show();
 			    
 			    $.each(node_data, function(key,val) {
-			    	$('<label>').html("<b>Name: </b>"+key).appendTo($('#node_description'));
+			    	$('<button>').text("Run chef-client").appendTo($('#node_description'));			    				    	
+			    	$('<label>').html("<b>Name: </b>"+key).appendTo($('#node_description'));			    	
+			    	$('<label>').html("<b>Run list: </b>"+val['run_list'] +  "<button class='change_run_list ui-button' style='margin-left:20px'>change</button>")
+			    				.appendTo($('#node_description'));
 			    	
 			    	
 			    	// other_attributes = ['razor_metadata']
@@ -552,7 +682,7 @@ $( document ).ready(function() {
 			    	
 			    	});
 			    	
-			    	
+			    	$('<br />').appendTo($('#node_description'));
 			    	$('<hr />').appendTo($('#node_description'));
 			    });
 			}
