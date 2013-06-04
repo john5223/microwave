@@ -1,4 +1,7 @@
-import bottle, os, sys, re
+from gevent import monkey; monkey.patch_all()
+import bottle, os, sys, re, yaml, json
+import globals
+
 #===============================================================================
 # The following class is used to strip the trailing slash from the request path
 class StripPathMiddleware(object):
@@ -16,6 +19,15 @@ os.chdir(load_dir)
 app_base = os.path.dirname(os.path.realpath(__file__))
 app_base_join = lambda x: os.path.join(os.sep, app_base, x)
 
+#Get config
+configs = yaml.load(open(app_base_join('conf' + os.sep + "microwave.yaml")))
+config = {}
+env = configs['environment']
+for key, val in configs.iteritems():
+    if key == 'environment': config.update({key: val})
+    else: config.update({key: val[env]})
+globals.config = config
+
 #===============================================================================
 #Import windfall structure
 control_dirs = ['controllers']
@@ -32,10 +44,10 @@ if __name__ == '__main__':
     bottle.debug(True)
     app = bottle.app()
     myapp = StripPathMiddleware(app)
-    bottle.run(app=myapp, host='localhost', port='8080')
+    bottle.run(app=myapp, host='localhost', port='8080', server='gevent')
 else:
     #===============================================================================
     # Mod WSGI launch
-    print "#" * 71; print "    JOHN    CURRAN   "; print "#" * 71
+    print "#" * 71; print "    MICROWAVE   "; print "#" * 71
     application = bottle.default_app()
     application = StripPathMiddleware(application)

@@ -1,0 +1,17 @@
+environment: dev
+razor:
+    dev: &razor_default
+        ip: '198.101.133.3'
+    staging: 
+        <<: *razor_default
+    prod: 
+        <<: *razor_default
+
+chef:
+    dev: &chef_default
+        remote-chef-clients: '~/remote-chef-clients'
+    staging: 
+        <<: *chef_default
+    prod: 
+        <<: *chef_default
+
