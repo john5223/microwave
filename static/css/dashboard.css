@@ -2,7 +2,9 @@
 .ui-icon { display:inline-block;line-height: 28px; }
 
 #chef_server {font-size: 22px; color:red;}
-#errors {color:red; font-size: 22px; padding-bottom: 20px;}
+#errors {color:red; font-size: 22px; padding-bottom: 10px;}
+#microwave_plugins {}
+
 
 #environments { width: 250px; height: 120px; } 
 #environment_attributes * { display:inline; margin-right: 20px } 

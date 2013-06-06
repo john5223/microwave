@@ -1,4 +1,12 @@
 $( document ).ready(function() {
+	$('.move_to_environment').live("click", function () { 
+		move_nodes_to_environment($(this).text());
+	});
+	
+	$('#move_node').button().click(function () { 
+		move_nodes_dialog();
+	});
+
 
 	$('#environment_json_link').click(function () { show_environment_json(); });
 	$('#environments').change( function () { refresh_environment_and_node_data(); });
@@ -68,8 +76,6 @@ function refresh_dashboard() {
 //######################
 //    Environment
 //######################
-
-
 function refresh_environments_list() {
 	$.ajax({
 		url: '/environments/' + $('#chef_server').text(),
@@ -101,8 +107,7 @@ function refresh_environments_list() {
 function refresh_environment_and_node_data() {
 	$('#loader').show();
 	$('#node_container').empty();
-	$('#other_node_container').empty();
-	
+	$('#other_node_container').empty();	
 
 	var selected_env = $('#environments').val();		
 	if (selected_env == null) return;
@@ -129,7 +134,18 @@ function refresh_environment_and_node_data() {
 					});
 					optgroup.appendTo($('#node_container'));
 				});
-				//Add other_nodes 
+				
+				//Add _default nodes to other nodes container
+				if (data['other_nodes']['_default']) { 
+			    	var optgroup = $('<optgroup>');
+					optgroup.attr('label', "_default");
+			    	$.each(data['other_nodes']['_default'], function (index, node) {
+						$('<option>').html(node).appendTo(optgroup);
+					});	    		
+			    	optgroup.appendTo($('#other_node_container'));
+			    	delete data['other_nodes']['_default'];
+			    }
+			    //Add other_nodes
 				$.each(data['other_nodes'], function (env, nodes) {
 					var optgroup = $('<optgroup>');
 					optgroup.attr('label', env);
@@ -144,7 +160,8 @@ function refresh_environment_and_node_data() {
 				$('#environment_json_link').show();
 
 				//Display environment data
-				environment_data = data['environments']
+				environment_data = data['environments'];
+				$('#environment_description').empty();
 				$.each(environment_data, function(key,val) {
 			    	$('<label>').html("<b>Name: </b>"+key).appendTo($('#environment_description'));			    				    	
 			    	attrib_to_look_for = ['package_component','keystone', 'vips']			    	
@@ -177,7 +194,27 @@ function show_environment_json() {
 		buttons: {
 			"Save": function() {
 				$(this).dialog("close");
-				alert("coming soon...");			
+				update_data = jQuery.parseJSON($('#environment_json').val().replace('\n','','g').trim());				
+				update_data = {"update": update_data };
+				console.log(update_data);
+				$.ajax({
+					url: "/environment/" + $('#chef_server').text(),
+					type: "POST",
+					contentType: "application/json",
+					data: JSON.stringify(update_data),
+					success: function(data,status) {
+						if (data['error']) {
+							var label=$('<label>').text("ERROR: " + data['error']);
+							label.dialog();
+						} else {
+							var label=$('<label>').text(status);
+							refresh_environment_and_node_data();							
+						}
+						label.dialog();
+					}
+
+				})
+
 			},
 			"Cancel": function() {
 				//Restore the old environment data
@@ -201,12 +238,18 @@ function delete_environment() {
 			"Delete": function () {
 				$(this).dialog("close");
 				$.ajax({
-					url: "/environment/" + $('#chef_server').text() + "/" + "delete",
+					url: "/environment/" + $('#chef_server').text(),
 					type: "POST",
 					dataType: "json",
-					data: JSON.stringify({'name': input.val()}),
+					data: JSON.stringify({'delete': {'names': input.val()}}),
+					contentType: "application/json",
 					success: function(data,status) {
-						var label=$('<label>').text(status);
+						if (data['error']) {
+							var label=$('<label>').text("ERROR: " + data['error']);
+						} else {
+							var label=$('<label>').text(status);
+							refresh_dashboard();							
+						}
 						label.dialog();
 					},
 					error: function(data,status) {
@@ -234,12 +277,18 @@ function add_environment() {
 			"Add": function () {
 				$(this).dialog("close");
 				$.ajax({
-					url: "/environment/" + $('#chef_server').text() + "/" + "add",
+					url: "/environment/" + $('#chef_server').text(),
 					type: "POST",
 					dataType: "json",
-					data: JSON.stringify({'name': input.val()}),
+					data: JSON.stringify({'add': {'names': input.val()}}),
+					contentType: "application/json",
 					success: function(data,status) {
-						var label=$('<label>').text(status);
+						if (data['error']) {
+							var label=$('<label>').text("ERROR: " + data['error']);
+						} else {
+							var label=$('<label>').text(status);
+							refresh_dashboard();							
+						}
 						label.dialog();
 					},
 					error: function(data,status) {
@@ -256,6 +305,53 @@ function add_environment() {
 }
 
 
+function move_nodes_to_environment(clicked_environment) {
+		$('.move_to').dialog('close'); 	
+		$('#loader').show();			
+		nodes = $('#other_node_container').val();
+		env = clicked_environment;
+		move_data = {'move_to_environment': {'nodes': nodes, 'environment': env } }
+		$.ajax({
+			url: "/environment/" + $('#chef_server').text(),
+		    type:"POST",
+		    data:JSON.stringify(move_data),
+		    contentType: "application/json",
+		    success: function(data,status){	
+		    	if (data['error']) {
+					var label=$('<label>').text("ERROR: " + data['error']);
+					label.dialog();
+					$('#loader').hide();	
+					return;
+				}
+		    	//go select env then display success
+		    	refresh_environment_and_node_data();
+		    	var div = $('<label>').html(status).appendTo($('<div>'));
+				div.dialog();
+				$('#loader').hide();		
+			}			
+		});
+		
+}
+function move_nodes_dialog() {
+	other_nodes = $('#other_node_container').val();
+	selected_environments = $('#environments').val();
+	
+	env_buttons = $('<div />');
+	$.each($('#environments').val(), function(key, val) {
+		var move_nodes_button = $('<button />').attr("class","move_to_environment")
+					   .html(val + "<br />")
+					   .css({"text-align":"center"});									 
+		move_nodes_button.appendTo(env_buttons);
+	});		
+	
+	var div = $('<label>')
+			.html("<b>Move:</b> <br />" + other_nodes.join('<br />') + " <br /><br />\
+			<b>to environment:</b> <br /><br />" + env_buttons.html() + "<br /><br />")
+			.appendTo($('<div />'))
+	
+	div.attr("class","move_to");
+	div.dialog();
+}
 
 
 
@@ -266,13 +362,13 @@ function add_environment() {
 // ##########################
 
 function display_node_info() { 
+	var selected_nodes = $('#node_container').val().concat($('#other_node_container').val());               
+    selected_nodes = selected_nodes.filter(function(n){return n}); //get rid of nulls
+    if (selected_nodes == null) return;
+	
 	$('#loader').show();
 	$("#node_json").val('');
 	$('#node_description').empty();
-	
-    var selected_nodes = $('#node_container').val().concat($('#other_node_container').val());               
-    selected_nodes = selected_nodes.filter(function(n){return n}); //get rid of nulls
-    if (selected_nodes == null) return;
 	
 	data = {"names":selected_nodes.join()}
 	$.ajax({
@@ -420,7 +516,7 @@ function refresh_cookbooks_list() {
 				$('#errors').empty().text(data['error']);
 				return;
 			}
-			console.log(data['cookbooks']);
+			//console.log(data['cookbooks']);
 			$('#cookbooks').empty();
 			$('<option>').html("-").appendTo($('#cookbooks'));			
 			// Add environments to list

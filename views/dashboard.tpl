@@ -5,11 +5,12 @@
 		<img id="loader" src="/static/images/chef-loader.gif" style="display:none" />
 	</div>
 	
-	<div id="chef_server">{{chef_server if defined('chef_server') else ''}}</div>
+	<h2> Chef Server:  <label id="chef_server">{{chef_server if defined('chef_server') else ''}}</label> </h2>
+	
 	<br />
 	<div id="errors"> {{error if defined('error') else ''}}	</div>
 	<br />
-	<div id="microwave_plugins" style="display:none"></div>
+	<div id="microwave_plugins"></div>
 	<br />
 	
 	<div class="l" style="width: 350px;">

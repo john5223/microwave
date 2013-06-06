@@ -97,31 +97,56 @@ def environment(chef_server):
 
 
 #Only allowed actions are add / delete
-@post('/environment/:chef_server/:action')
-def environment_action(chef_server, action):
+@post('/environment/:chef_server')
+def environment_action(chef_server):
+    remote_chef_api = get_remote_chef_api(chef_server)
     try:
         if request.json is None:
             raise Exception("Not valid json")
         else:
-            print "%s: %s" % (action, names)
-            if action == "add":
-                for env in request.json:
-                    print "Added env: %s" % env
-                    Environment.create(env)
-            elif action == "delete":
-                for env in request.json:
-                    print "deleting %s" % env
-                    e = Environment(env)
-                    e.delete()
-            elif action == "update":
-                raise Exception("Need to implement!")
-            else:
-                return {'error': 'Action %s is not implemented' % action}
+            actions = request.json.keys()
+            for action in actions:
+                if action == "add":
+                    for env in request.json[action]['names'].split(","):
+                        print "Added env: %s" % env
+                        new_env = Environment.create(env, api=remote_chef_api)
+                        new_env.save()
+                        print new_env.to_dict()
+                elif action == "delete":
+                    for env in request.json[action]['names'].split(","):
+                        print "deleting %s" % env
+                        e = Environment(env, api=remote_chef_api)
+                        e.delete()
+                elif action == "move_to_environment":
+                    environment = request.json[action]['environment']
+                    nodes = request.json[action]['nodes']
+                    print "Moving nodes: %s to env %s" % (nodes, environment)
+                    #if environment exists
+                    if len(Search('environment', api=remote_chef_api).query('name:%s' % environment)) > 0:
+                        for n in nodes:
+                            node = Node(n, api=remote_chef_api)
+                            print "Changing %s to env %s" % (node.name, environment)
+                            node.chef_environment = environment
+                            node.save()
 
+                elif action == "update":
+                    print "updating: %s" % request.json
+                    for env in request.json[action]:
+                        chef_env = Environment(env, api=remote_chef_api)
+                        #update the environment with the json provided
+                        for key in ['default_attributes', 'override_attributes',
+                                    'cookbook_versions', 'description']:
+                            if key in request.json[action][env]:
+                                #Save as attributes in chef object so that it can be saved
+                                setattr(chef_env, key,request.json[action][env][key])
+                        chef_env.save()
+                else:
+                    return {'error': 'Action %s is not implemented' % action}
             return {'status': 'success'}
     except Exception, e:
-        return {'error': str(e)}
         print e
+        return {'error': str(e)}
+
 
 
 
@@ -130,7 +155,6 @@ def environment_action(chef_server, action):
 
 ################
 # Nodes
-
 @get('/nodes')
 def nodes_list(chef_api=default_chef_api):
     return {'nodes': [e for e in Node.list(api=chef_api)]}
@@ -170,7 +194,6 @@ def node_info(chef_server):
         print traceback.format_exc()
         print e
         return {'error': str(e)}
-
 
 
 
@@ -271,19 +294,6 @@ def cookbook_name_version(chef_server, cookbook, version):
 
 
 
-
-@post('/move_nodes')
-def move_nodes():
-    json_data = misc.get_json(request.body.read(), expected_keys=['nodes', 'environment'])
-    environment = json_data['environment']
-    #if enviornment exists
-    if len(Search('environment').query('name:%s' % environment)) > 0:
-        for n in json_data['nodes']:
-            node = Node(n)
-            print "Changing %s to env %s" % (node.name, environment)
-            node.chef_environment = environment
-            node.save()
-    return {'status': 'Success'}
 
 
 
