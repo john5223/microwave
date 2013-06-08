@@ -1,7 +1,7 @@
 environment: dev
 razor:
     dev: &razor_default
-        ip: '198.101.133.3'
+        ip: '111.111.111.111'
     staging: 
         <<: *razor_default
     prod: 
