@@ -4,7 +4,7 @@ from chef import *
 from services.chef_service import *
 from services import misc
 from globals import *
-
+import sys
 
 default_chef_api = autoconfigure()
 if default_chef_api is None:
